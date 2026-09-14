@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// NOTE: "admin" is its own microservice here — seller onboarding/KYC review,
+// platform-wide configuration, and the audit/event trail.
+//   - applicantUserId / approvedByAdminId / adminId / actorId
+//     -> all owned by the auth/user service, kept as plain scalar Uuid
+//        fields with no Prisma relation (no cross-service FK/join).
+// Role-scoped user preferences (AdminSettings, AdminNotificationPreferences)
+// already live in the user service's schema since they hang off User.
+// ---------------------------------------------------------------------------
+
+enum SellerApplicationStatus {
+  not_submitted
+  pending
+  approved
+  rejected
+
+  @@map("seller_application_status")
+}
+
+enum BusinessType {
+  individual
+  company
+
+  @@map("business_type")
+}
+
+enum SellerDocumentType {
+  identity
+  business_registration
+  tax_document
+  bank_account
+
+  @@map("seller_document_type")
+}
+
+enum DocumentReviewStatus {
+  pending
+  approved
+  rejected
+
+  @@map("document_review_status")
+}
+
+enum ApplicationReviewAction {
+  approved
+  rejected
+
+  @@map("application_review_action")
+}
+
+model SellerApplication {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicantUserId     String?                 @map("applicant_user_id") @db.Uuid
+  status              SellerApplicationStatus @default(not_submitted)
+  submittedAt         DateTime?               @map("submitted_at") @db.Timestamptz(6)
+  verifiedAt          DateTime?               @map("verified_at") @db.Timestamptz(6)
+  comments            String?
+  storeName           String?                 @map("store_name")
+  location            String?
+  businessType        BusinessType?           @map("business_type")
+  taxId               String?                 @map("tax_id")
+  registrationNumber  String?                 @map("registration_number")
+  approvedAt          DateTime?               @map("approved_at") @db.Timestamptz(6)
+  approvedByAdminId   String?                 @map("approved_by_admin_id") @db.Uuid
+  rejectionReason     String?                 @map("rejection_reason")
+  createdAt           DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  documents SellerApplicationDocument[]
+  reviews   SellerApplicationReview[]
+
+  @@index([status, submittedAt(sort: Desc)], map: "idx_seller_applications_status")
+  @@index(applicantUserId, map: "idx_seller_applications_applicant")
+  @@map("seller_applications")
+}
+
+model SellerApplicationDocument {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicationId   String                @map("application_id") @db.Uuid
+  type            SellerDocumentType
+  status          DocumentReviewStatus  @default(pending)
+  fileUrl         String?               @map("file_url")
+  uploadedAt      DateTime              @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+  rejectionReason String?               @map("rejection_reason")
+
+  application SellerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index(applicationId, map: "idx_seller_application_documents_application")
+  @@index(status, map: "idx_seller_application_documents_status")
+  @@map("seller_application_documents")
+}
+
+model SellerApplicationReview {
+  id            String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  applicationId String                  @map("application_id") @db.Uuid
+  adminId       String                  @map("admin_id") @db.Uuid
+  action        ApplicationReviewAction
+  reason        String?
+  createdAt     DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  application SellerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt(sort: Desc)], map: "idx_seller_application_reviews_application")
+  @@map("seller_application_reviews")
+}
+
+model PlatformSettings {
+  id                          Boolean  @id @default(true)
+  platformName                String?  @map("platform_name")
+  commissionRate              Decimal? @map("commission_rate") @db.Decimal(5, 2)
+  defaultDeliveryFee          Decimal? @map("default_delivery_fee") @db.Decimal(19, 4)
+  maintenanceMode             Boolean? @map("maintenance_mode")
+  allowNewRegistrations       Boolean? @map("allow_new_registrations")
+  allowNewSellerApplications  Boolean? @map("allow_new_seller_applications")
+  requireProductModeration    Boolean? @map("require_product_moderation")
+  requireSellerApproval       Boolean? @map("require_seller_approval")
+  defaultLanguage             String?  @map("default_language")
+  timezone                    String?
+  updatedAt                   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_settings")
+}
+
+model PlatformEvent {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId      String?  @map("actor_id") @db.Uuid
+  actorName    String?  @map("actor_name")
+  actorType    String   @map("actor_type")
+  eventType    String   @map("event_type")
+  resourceType String?  @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  metadata     Json     @default("{}")
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)], map: "idx_platform_events_created")
+  @@index([actorType, actorId, createdAt(sort: Desc)], map: "idx_platform_events_actor")
+  @@index([resourceType, resourceId, createdAt(sort: Desc)], map: "idx_platform_events_resource")
+  @@index([eventType, createdAt(sort: Desc)], map: "idx_platform_events_event_type")
+  @@map("platform_events")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId    String   @map("admin_id") @db.Uuid
+  adminName  String   @map("admin_name")
+  action     String
+  resource   String
+  resourceId String?  @map("resource_id")
+  metadata   Json     @default("{}")
+  ipAddress  String   @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([adminId, createdAt(sort: Desc)], map: "idx_audit_logs_admin_date")
+  @@index([resource, resourceId, createdAt(sort: Desc)], map: "idx_audit_logs_resource")
+  @@map("audit_logs")
+}
