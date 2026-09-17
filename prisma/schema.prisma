@@ -18,7 +18,6 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 enum SellerApplicationStatus {
-  not_submitted
   pending
   approved
   rejected
@@ -59,9 +58,8 @@ enum ApplicationReviewAction {
 
 model SellerApplication {
   id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  applicantUserId     String?                 @map("applicant_user_id") @db.Uuid
-  status              SellerApplicationStatus @default(not_submitted)
-  submittedAt         DateTime?               @map("submitted_at") @db.Timestamptz(6)
+  applicantUserId     String                  @unique @map("applicant_user_id") @db.Uuid
+  status              SellerApplicationStatus @default(pending)
   verifiedAt          DateTime?               @map("verified_at") @db.Timestamptz(6)
   comments            String?
   storeName           String?                 @map("store_name")
@@ -78,7 +76,6 @@ model SellerApplication {
   documents SellerApplicationDocument[]
   reviews   SellerApplicationReview[]
 
-  @@index([status, submittedAt(sort: Desc)], map: "idx_seller_applications_status")
   @@index(applicantUserId, map: "idx_seller_applications_applicant")
   @@map("seller_applications")
 }
