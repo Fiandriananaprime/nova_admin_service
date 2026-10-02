@@ -1,0 +1,139 @@
+openapi: 3.0.3
+info:
+  title: NovaMarket Admin Service
+  description: Internal administration service contract. Public clients use NovaApiGateway.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3008
+    description: Local development
+tags:
+  - name: Admin
+    description: Internal administration operations
+  - name: System
+    description: Common service health and monitoring endpoints
+paths:
+  /api/admin/sellers/applications:
+    get:
+      tags: [Admin]
+      operationId: listSellerApplications
+      summary: List seller applications
+      responses:
+        '200':
+          description: Seller applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object, additionalProperties: true }
+  /internal/seller:
+    post:
+      tags: [Admin]
+      operationId: createSellerApplication
+      summary: Create a seller application from an internal service
+      parameters:
+        - in: header
+          name: x-user-id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [store]
+              properties:
+                comments: { type: string }
+                store:
+                  type: object
+                  required: [location, businessType, documents]
+                  properties:
+                    location: { type: string }
+                    storeName: { type: string }
+                    businessType: { type: string, enum: [individual, company] }
+                    taxId: { type: string }
+                    registrationNumber: { type: string }
+                    documents:
+                      type: array
+                      items:
+                        type: object
+                        required: [type, fileUrl]
+                        properties:
+                          type:
+                            type: string
+                            enum: [identity, business_registration, tax_document, bank_account]
+                          fileUrl: { type: string, format: uri }
+      responses:
+        '201': { description: Seller application created }
+        '400': { description: Invalid request }
+  /health:
+    get:
+      tags: [System]
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
+  /ready:
+    get:
+      tags: [System]
+      operationId: getReady
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadyResponse' }
+        '503':
+          description: Service is not ready
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotReadyResponse' }
+  /version:
+    get:
+      tags: [System]
+      operationId: getVersion
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VersionResponse' }
+  /metrics:
+    get:
+      tags: [System]
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema: { type: string }
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok] }
+    ReadyResponse:
+      type: object
+      required: [status, checks]
+      properties:
+        status: { type: string, enum: [ready] }
+        checks: { type: object, additionalProperties: { type: string } }
+    NotReadyResponse:
+      type: object
+      required: [status, checks]
+      properties:
+        status: { type: string, enum: [not_ready] }
+        checks: { type: object, additionalProperties: { type: string } }
+    VersionResponse:
+      type: object
+      required: [service, version, commit]
+      properties:
+        service: { type: string }
+        version: { type: string }
+        commit: { type: string }

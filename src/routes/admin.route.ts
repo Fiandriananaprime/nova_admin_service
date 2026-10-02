@@ -7,6 +7,6 @@ export const AdminRoute = (
     option:{prefix:string}
 ) => {
     app.register((router) => {
-        router.get("admin/sellers/applications",sellersController.getAllApplication.bind(sellersController))
+        router.get("/admin/sellers/applications",sellersController.getAllApplication.bind(sellersController))
     },option)
 }

@@ -26,3 +26,5 @@ export type createSellerApplication = {
     comments:string,
     store: store
 }
+
+export type CreateSellerApplicationBody = Omit<createSellerApplication, "userId">;

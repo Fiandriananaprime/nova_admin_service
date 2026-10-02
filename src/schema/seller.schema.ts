@@ -1,12 +1,8 @@
 export const createSellerApplicationSchema = {
   body: {
     type: "object",
-    required: [ "store","userId"],
+    required: ["store"],
     properties: {
-      userId: {
-        type: "string",
-        format:"uuid"
-      },
       comments: {
         type: "string",
       },
