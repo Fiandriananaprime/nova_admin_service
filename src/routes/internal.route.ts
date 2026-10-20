@@ -8,6 +8,6 @@ export const InternalRoute = (
     option: {prefix:string}
 ) => {
     app.register((router) => {
-        router.post("/seller",{schema:createSellerApplicationSchema},sellerController.createApplication.bind(sellerController))
+        router.post("/seller-applications",{schema:createSellerApplicationSchema},sellerController.createApplication.bind(sellerController))
     },option)
 }

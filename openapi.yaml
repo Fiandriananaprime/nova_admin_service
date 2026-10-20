@@ -25,7 +25,7 @@ paths:
               schema:
                 type: array
                 items: { type: object, additionalProperties: true }
-  /internal/seller:
+  /internal/seller-applications:
     post:
       tags: [Admin]
       operationId: createSellerApplication
