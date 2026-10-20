@@ -8,7 +8,7 @@ export const createSellerGrpcService = (sellerRepository: SellerRepository) => (
       if (!sellerId) {
         return callback({
           code: grpc.status.INVALID_ARGUMENT,
-          message: "seller_id is required",
+          details: "seller_id is required",
         });
       }
 
@@ -16,7 +16,7 @@ export const createSellerGrpcService = (sellerRepository: SellerRepository) => (
       if (!details) {
         return callback({
           code: grpc.status.NOT_FOUND,
-          message: "Approved seller application not found",
+          details: "Approved seller application not found",
         });
       }
 
@@ -28,7 +28,7 @@ export const createSellerGrpcService = (sellerRepository: SellerRepository) => (
     } catch (error) {
       return callback({
         code: grpc.status.INTERNAL,
-        message: error instanceof Error ? error.message : "Internal server error",
+        details: error instanceof Error ? error.message : "Internal server error",
       });
     }
   },
