@@ -40,8 +40,9 @@ RUN --mount=type=cache,target=/root/.npm \
 	&& rm -f .npmrc
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/src/grpc/proto ./dist/grpc/proto
 COPY --from=build /app/src/generated/prisma ./dist/generated/prisma
 
-EXPOSE 3008
+EXPOSE 3008 50052
 
 ENTRYPOINT ["node", "dist/server.js"]
