@@ -50,6 +50,20 @@ export class SellerRepository {
     return prisma.sellerApplication.findUnique({where:{applicantUserId}})
   }
 
+  async getApprovedBusinessDetails(applicantUserId: string) {
+    return prisma.sellerApplication.findFirst({
+      where: {
+        applicantUserId,
+        status: "approved",
+      },
+      select: {
+        businessType: true,
+        taxId: true,
+        registrationNumber: true,
+      },
+    });
+  }
+
   async create(application:createSellerApplication){
     const { userId,comments,store } = application;
     
