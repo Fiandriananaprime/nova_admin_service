@@ -1,11 +1,13 @@
 import "dotenv/config";
 
 import { app } from "./app.js";
+import { startGrpcServer } from "./grpc/server.js";
 
 const PORT = Number(process.env["PORT"]) || 3001;
 
 const start = async () => {
     try {
+       await startGrpcServer();
        const address =  await app.listen({
             port: PORT,
             host: "0.0.0.0",
