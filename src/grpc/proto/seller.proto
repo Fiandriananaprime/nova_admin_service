@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package seller;
+
+service SellerBusinessService {
+  rpc GetSellerBusinessDetails (GetSellerBusinessDetailsRequest) returns (SellerBusinessDetails);
+}
+
+message GetSellerBusinessDetailsRequest {
+  string seller_id = 1;
+}
+
+message SellerBusinessDetails {
+  string business_type = 1;
+  string tax_id = 2;
+  string registration_number = 3;
+}
